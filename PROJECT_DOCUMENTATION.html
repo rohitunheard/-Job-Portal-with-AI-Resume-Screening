@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Job Portal – Project Documentation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; color: #1e293b; background: #fff; font-size: 13px; line-height: 1.6; }
+
+    @media print {
+      .no-print { display: none; }
+      .page-break { page-break-before: always; }
+      body { font-size: 12px; }
+    }
+
+    /* Cover Page */
+    .cover { background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%); color: white; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 40px; text-align: center; }
+    .cover-badge { background: rgba(6,182,212,0.15); border: 1px solid rgba(6,182,212,0.4); color: #67e8f9; padding: 6px 20px; border-radius: 50px; font-size: 11px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 24px; display: inline-block; }
+    .cover h1 { font-size: 52px; font-weight: 800; margin-bottom: 16px; background: linear-gradient(90deg, #67e8f9, #818cf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .cover .subtitle { font-size: 18px; color: #94a3b8; max-width: 600px; margin: 0 auto 40px; }
+    .cover-tags { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-bottom: 40px; }
+    .cover-tag { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); padding: 6px 16px; border-radius: 8px; font-size: 12px; color: #cbd5e1; }
+    .cover-meta { border-top: 1px solid rgba(255,255,255,0.1); padding-top: 30px; color: #64748b; font-size: 13px; }
+
+    /* Content */
+    .container { max-width: 900px; margin: 0 auto; padding: 40px 30px; }
+    h2 { font-size: 22px; font-weight: 700; color: #0f172a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #e2e8f0; display: flex; align-items: center; gap: 8px; }
+    h2 .num { background: linear-gradient(135deg, #0891b2, #6366f1); color: white; width: 28px; height: 28px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0; }
+    h3 { font-size: 15px; font-weight: 700; color: #1e293b; margin: 20px 0 10px; }
+    p { color: #475569; margin-bottom: 10px; }
+
+    /* Cards */
+    .card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 16px; }
+    .card-title { font-weight: 700; font-size: 14px; color: #0f172a; margin-bottom: 6px; }
+    .card-sub { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+
+    /* Feature grid */
+    .feature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; margin-bottom: 20px; }
+    .feature-item { background: #f8fafc; border: 1px solid #e2e8f0; border-left: 4px solid #0891b2; border-radius: 8px; padding: 14px; }
+    .feature-item.violet { border-left-color: #7c3aed; }
+    .feature-item.emerald { border-left-color: #059669; }
+    .feature-item.orange { border-left-color: #ea580c; }
+    .feature-item h4 { font-size: 13px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+    .feature-item p { font-size: 12px; color: #64748b; margin: 0; }
+
+    /* Package table */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    th { background: #0f172a; color: white; padding: 10px 14px; text-align: left; font-size: 12px; font-weight: 600; }
+    td { padding: 9px 14px; border-bottom: 1px solid #f1f5f9; font-size: 12px; vertical-align: top; }
+    tr:nth-child(even) td { background: #f8fafc; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; font-weight: 700; }
+    .badge-cyan { background: #cffafe; color: #0891b2; }
+    .badge-violet { background: #ede9fe; color: #7c3aed; }
+    .badge-emerald { background: #d1fae5; color: #059669; }
+    .badge-orange { background: #ffedd5; color: #ea580c; }
+    .badge-slate { background: #f1f5f9; color: #475569; }
+
+    /* API table */
+    .method { display: inline-block; padding: 2px 7px; border-radius: 4px; font-size: 10px; font-weight: 700; }
+    .get { background: #d1fae5; color: #059669; }
+    .post { background: #dbeafe; color: #2563eb; }
+    .put { background: #fef3c7; color: #d97706; }
+    .del { background: #fee2e2; color: #dc2626; }
+
+    /* Route list */
+    .route-list { list-style: none; }
+    .route-list li { display: flex; align-items: flex-start; gap: 10px; padding: 7px 0; border-bottom: 1px solid #f1f5f9; font-size: 12px; }
+    .route-list li:last-child { border-bottom: none; }
+    code { background: #f1f5f9; border: 1px solid #e2e8f0; padding: 2px 6px; border-radius: 4px; font-family: 'Consolas', monospace; font-size: 11px; color: #0891b2; }
+
+    /* Flow diagram */
+    .flow { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 16px 0; }
+    .flow-step { background: #0f172a; color: white; padding: 8px 14px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+    .flow-arrow { color: #94a3b8; font-size: 18px; }
+    .flow-step.cyan { background: #0891b2; }
+    .flow-step.violet { background: #7c3aed; }
+    .flow-step.emerald { background: #059669; }
+    .flow-step.orange { background: #ea580c; }
+
+    /* Tech stack */
+    .tech-stack { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .tech-item { border: 1px solid #e2e8f0; border-radius: 10px; padding: 10px 16px; display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 90px; text-align: center; }
+    .tech-item .tech-name { font-size: 12px; font-weight: 700; color: #0f172a; }
+    .tech-item .tech-role { font-size: 10px; color: #94a3b8; }
+
+    /* Section divider */
+    .divider { height: 1px; background: linear-gradient(90deg, #0891b2, #6366f1, transparent); margin: 30px 0; }
+
+    /* Print button */
+    .print-btn { position: fixed; bottom: 30px; right: 30px; background: #0891b2; color: white; border: none; padding: 14px 24px; border-radius: 50px; font-size: 14px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 20px rgba(8,145,178,0.4); z-index: 999; }
+    .print-btn:hover { background: #0e7490; }
+
+    ul.plain { list-style: disc; padding-left: 20px; }
+    ul.plain li { font-size: 12px; color: #475569; margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+<!-- PRINT BUTTON -->
+<button class="print-btn no-print" onclick="window.print()">🖨 Save as PDF</button>
+
+<!-- ═══════════════ COVER PAGE ═══════════════ -->
+<div class="cover">
+  <div class="cover-badge">ASD Final Project</div>
+  <h1>Job Portal</h1>
+  <p class="subtitle">A full-stack web application connecting job seekers, employers, and administrators with AI-powered resume screening.</p>
+  <div class="cover-tags">
+    <span class="cover-tag">React 19</span>
+    <span class="cover-tag">Node.js + Express</span>
+    <span class="cover-tag">MongoDB + Mongoose</span>
+    <span class="cover-tag">Tailwind CSS</span>
+    <span class="cover-tag">JWT Authentication</span>
+    <span class="cover-tag">OTP Email Verification</span>
+    <span class="cover-tag">Gemini AI</span>
+    <span class="cover-tag">Multer File Upload</span>
+  </div>
+  <div class="cover-meta">
+    <p>Full Stack Web Application &nbsp;|&nbsp; MERN Stack &nbsp;|&nbsp; REST API</p>
+  </div>
+</div>
+
+<!-- ═══════════════ MAIN CONTENT ═══════════════ -->
+<div class="container">
+
+  <!-- 1. PROJECT OVERVIEW -->
+  <h2><span class="num">1</span> Project Overview</h2>
+  <p>The Job Portal is a full-stack web application built on the MERN stack (MongoDB, Express, React, Node.js). It provides three distinct user roles — <strong>Job Seekers</strong>, <strong>Employers</strong>, and <strong>Admins</strong> — each with dedicated features, a unified login system, and AI-powered resume screening via Google Gemini.</p>
+
+  <div class="feature-grid">
+    <div class="feature-item">
+      <h4>👤 Job Seeker</h4>
+      <p>Register, login with OTP, browse 24+ jobs, apply in one tap, manage profile with resume & photo upload.</p>
+    </div>
+    <div class="feature-item violet">
+      <h4>🏢 Employer</h4>
+      <p>Create employer account, post/edit/delete job openings, toggle active/paused status. Jobs appear live to seekers.</p>
+    </div>
+    <div class="feature-item emerald">
+      <h4>🛡 Admin</h4>
+      <p>Secure admin panel to view all job applications, user profiles, resumes, and run AI resume screening.</p>
+    </div>
+    <div class="feature-item orange">
+      <h4>🤖 AI Screening</h4>
+      <p>Admin can screen all uploaded resumes against any job role using Google Gemini AI and rank candidates by score.</p>
+    </div>
+  </div>
+
+  <!-- 2. TECHNOLOGY STACK -->
+  <div class="page-break"></div>
+  <h2><span class="num">2</span> Technology Stack</h2>
+
+  <h3>Frontend</h3>
+  <div class="tech-stack">
+    <div class="tech-item"><span class="tech-name">React 19</span><span class="tech-role">UI Framework</span></div>
+    <div class="tech-item"><span class="tech-name">Vite 8</span><span class="tech-role">Build Tool</span></div>
+    <div class="tech-item"><span class="tech-name">Tailwind CSS 3</span><span class="tech-role">Styling</span></div>
+    <div class="tech-item"><span class="tech-name">React Router 6</span><span class="tech-role">Navigation</span></div>
+    <div class="tech-item"><span class="tech-name">Headless UI</span><span class="tech-role">Components</span></div>
+    <div class="tech-item"><span class="tech-name">Heroicons</span><span class="tech-role">Icons</span></div>
+  </div>
+
+  <h3>Backend</h3>
+  <div class="tech-stack">
+    <div class="tech-item"><span class="tech-name">Node.js</span><span class="tech-role">Runtime</span></div>
+    <div class="tech-item"><span class="tech-name">Express 5</span><span class="tech-role">Web Framework</span></div>
+    <div class="tech-item"><span class="tech-name">MongoDB</span><span class="tech-role">Database</span></div>
+    <div class="tech-item"><span class="tech-name">Mongoose 9</span><span class="tech-role">ODM</span></div>
+    <div class="tech-item"><span class="tech-name">JWT</span><span class="tech-role">Auth Tokens</span></div>
+    <div class="tech-item"><span class="tech-name">Bcrypt.js</span><span class="tech-role">Password Hash</span></div>
+    <div class="tech-item"><span class="tech-name">Nodemailer</span><span class="tech-role">Email / OTP</span></div>
+    <div class="tech-item"><span class="tech-name">Multer</span><span class="tech-role">File Upload</span></div>
+    <div class="tech-item"><span class="tech-name">Gemini AI</span><span class="tech-role">AI Screening</span></div>
+    <div class="tech-item"><span class="tech-name">pdf-parse</span><span class="tech-role">PDF Extraction</span></div>
+    <div class="tech-item"><span class="tech-name">dotenv</span><span class="tech-role">Config</span></div>
+    <div class="tech-item"><span class="tech-name">Nodemon</span><span class="tech-role">Dev Server</span></div>
+  </div>
+
+  <!-- 3. BACKEND PACKAGES -->
+  <div class="page-break"></div>
+  <h2><span class="num">3</span> Backend Packages (npm)</h2>
+
+  <table>
+    <tr><th>Package</th><th>Version</th><th>Type</th><th>Purpose</th></tr>
+    <tr><td><strong>express</strong></td><td>^5.2.1</td><td><span class="badge badge-cyan">Core</span></td><td>Web server framework — handles routes, middleware, REST API</td></tr>
+    <tr><td><strong>mongoose</strong></td><td>^9.6.3</td><td><span class="badge badge-cyan">Core</span></td><td>MongoDB ODM — schema definitions, database queries, models</td></tr>
+    <tr><td><strong>dotenv</strong></td><td>^17.4.2</td><td><span class="badge badge-slate">Config</span></td><td>Loads environment variables from .env file (DB URL, secrets, SMTP)</td></tr>
+    <tr><td><strong>cors</strong></td><td>^2.8.6</td><td><span class="badge badge-slate">Middleware</span></td><td>Cross-Origin Resource Sharing — allows React frontend to call the API</td></tr>
+    <tr><td><strong>bcryptjs</strong></td><td>^3.0.3</td><td><span class="badge badge-violet">Security</span></td><td>Password hashing — never stores plain-text passwords in MongoDB</td></tr>
+    <tr><td><strong>jsonwebtoken</strong></td><td>^9.0.3</td><td><span class="badge badge-violet">Security</span></td><td>JWT token generation and verification for all 3 login roles</td></tr>
+    <tr><td><strong>nodemailer</strong></td><td>^8.0.11</td><td><span class="badge badge-emerald">Email</span></td><td>Sends OTP verification emails via Gmail SMTP for secure login</td></tr>
+    <tr><td><strong>multer</strong></td><td>^2.1.1</td><td><span class="badge badge-orange">Upload</span></td><td>Handles multipart/form-data — profile pics, resume PDF uploads</td></tr>
+    <tr><td><strong>@google/generative-ai</strong></td><td>^0.24.1</td><td><span class="badge badge-violet">AI</span></td><td>Google Gemini AI SDK — powers the admin resume screening feature</td></tr>
+    <tr><td><strong>pdf-parse</strong></td><td>^2.4.5</td><td><span class="badge badge-orange">Parsing</span></td><td>Extracts text content from uploaded PDF resumes for AI analysis</td></tr>
+    <tr><td><strong>nodemon</strong></td><td>^3.1.14</td><td><span class="badge badge-slate">Dev</span></td><td>Auto-restarts backend server on file changes during development</td></tr>
+  </table>
+
+  <!-- 4. FRONTEND PACKAGES -->
+  <h2><span class="num">4</span> Frontend Packages (npm)</h2>
+
+  <table>
+    <tr><th>Package</th><th>Version</th><th>Type</th><th>Purpose</th></tr>
+    <tr><td><strong>react</strong></td><td>^19.2.6</td><td><span class="badge badge-cyan">Core</span></td><td>UI library — component-based architecture, hooks (useState, useEffect, useRef)</td></tr>
+    <tr><td><strong>react-dom</strong></td><td>^19.2.6</td><td><span class="badge badge-cyan">Core</span></td><td>Renders React components into the browser DOM</td></tr>
+    <tr><td><strong>react-router-dom</strong></td><td>^6.30.4</td><td><span class="badge badge-cyan">Routing</span></td><td>Client-side routing — BrowserRouter, Routes, Route, Link, useNavigate, useSearchParams</td></tr>
+    <tr><td><strong>tailwindcss</strong></td><td>^3.4.19</td><td><span class="badge badge-emerald">Styling</span></td><td>Utility-first CSS framework — all UI styling done via Tailwind classes</td></tr>
+    <tr><td><strong>vite</strong></td><td>^8.0.12</td><td><span class="badge badge-slate">Build</span></td><td>Ultra-fast build tool and dev server with HMR (Hot Module Replacement)</td></tr>
+    <tr><td><strong>@headlessui/react</strong></td><td>^2.2.10</td><td><span class="badge badge-violet">UI</span></td><td>Accessible unstyled UI components (Dialog, Menu used in Home page)</td></tr>
+    <tr><td><strong>@heroicons/react</strong></td><td>^2.2.0</td><td><span class="badge badge-violet">Icons</span></td><td>SVG icon library by Tailwind team (Bars3Icon, XMarkIcon)</td></tr>
+    <tr><td><strong>postcss</strong></td><td>^8.5.15</td><td><span class="badge badge-slate">Dev</span></td><td>CSS processor required by Tailwind CSS to process utility classes</td></tr>
+    <tr><td><strong>autoprefixer</strong></td><td>^10.5.0</td><td><span class="badge badge-slate">Dev</span></td><td>Adds vendor prefixes automatically to CSS for cross-browser support</td></tr>
+    <tr><td><strong>eslint</strong></td><td>^10.3.0</td><td><span class="badge badge-slate">Dev</span></td><td>JavaScript linter — enforces code quality and consistency</td></tr>
+    <tr><td><strong>@vitejs/plugin-react</strong></td><td>^6.0.1</td><td><span class="badge badge-slate">Dev</span></td><td>Vite plugin enabling React JSX transform and Fast Refresh</td></tr>
+  </table>
+
+  <!-- 5. DATABASE MODELS -->
+  <div class="page-break"></div>
+  <h2><span class="num">5</span> MongoDB Database Models</h2>
+
+  <div class="card">
+    <div class="card-title">🗄 Useraccount</div>
+    <div class="card-sub">File: backend/models/useraccount.js &nbsp;|&nbsp; Collection: useraccounts</div>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+      <tr><td>name</td><td>String</td><td>✅</td><td>User's full name</td></tr>
+      <tr><td>email</td><td>String (unique)</td><td>✅</td><td>Unique login email</td></tr>
+      <tr><td>password</td><td>String</td><td>✅</td><td>Bcrypt-hashed password</td></tr>
+      <tr><td>loginOtpHash</td><td>String</td><td>—</td><td>Hashed OTP for email verification</td></tr>
+      <tr><td>loginOtpExpiresAt</td><td>Date</td><td>—</td><td>OTP expiry time (10 minutes)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗄 Userresume (Profile)</div>
+    <div class="card-sub">File: backend/models/userresume.js &nbsp;|&nbsp; Collection: userresumes</div>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      <tr><td>name</td><td>String</td><td>User's name (synced from account)</td></tr>
+      <tr><td>email</td><td>String (unique)</td><td>Links profile to user account</td></tr>
+      <tr><td>bio</td><td>String</td><td>Short personal summary</td></tr>
+      <tr><td>linkedin</td><td>String</td><td>LinkedIn profile URL</td></tr>
+      <tr><td>qualifications</td><td>String</td><td>Education and skills</td></tr>
+      <tr><td>resumeFile</td><td>String</td><td>Uploaded resume filename (stored in /uploads)</td></tr>
+      <tr><td>profilePic</td><td>String</td><td>Profile photo filename (stored in /uploads)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗄 Employer</div>
+    <div class="card-sub">File: backend/models/employer.js &nbsp;|&nbsp; Collection: employers</div>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      <tr><td>name</td><td>String</td><td>Contact person name</td></tr>
+      <tr><td>companyName</td><td>String</td><td>Company / organisation name</td></tr>
+      <tr><td>email</td><td>String (unique)</td><td>Employer login email</td></tr>
+      <tr><td>password</td><td>String</td><td>Bcrypt-hashed password</td></tr>
+      <tr><td>loginOtpHash</td><td>String</td><td>Hashed OTP for email login verification</td></tr>
+      <tr><td>loginOtpExpiresAt</td><td>Date</td><td>OTP expiry (10 minutes)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗄 JobPosting</div>
+    <div class="card-sub">File: backend/models/jobposting.js &nbsp;|&nbsp; Collection: jobpostings</div>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      <tr><td>employerId</td><td>ObjectId (ref: Employer)</td><td>Links posting to employer who created it</td></tr>
+      <tr><td>companyName</td><td>String</td><td>Company name (denormalized for display)</td></tr>
+      <tr><td>title</td><td>String</td><td>Job title</td></tr>
+      <tr><td>description</td><td>String</td><td>Full job description</td></tr>
+      <tr><td>location</td><td>String</td><td>Job location (Remote/Hybrid/City)</td></tr>
+      <tr><td>type</td><td>Enum</td><td>Full-time / Part-time / Contract / Freelance / Internship / Hybrid</td></tr>
+      <tr><td>salary</td><td>String</td><td>Salary range in INR (e.g. ₹8L - ₹12L)</td></tr>
+      <tr><td>skills</td><td>String</td><td>Required skills (optional)</td></tr>
+      <tr><td>isActive</td><td>Boolean</td><td>Controls visibility to job seekers (true = visible)</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗄 Jobapplication</div>
+    <div class="card-sub">File: backend/models/jobapplication.js &nbsp;|&nbsp; Collection: jobapplications</div>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      <tr><td>name</td><td>String</td><td>Applicant's name</td></tr>
+      <tr><td>email</td><td>String</td><td>Applicant's email</td></tr>
+      <tr><td>jobTitle</td><td>String</td><td>Job they applied for</td></tr>
+      <tr><td>company</td><td>String</td><td>Company name</td></tr>
+      <tr><td>location</td><td>String</td><td>Job location</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🗄 Admin</div>
+    <div class="card-sub">File: backend/models/admin.js &nbsp;|&nbsp; Collection: admins</div>
+    <table>
+      <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+      <tr><td>username</td><td>String (unique)</td><td>Admin login username</td></tr>
+      <tr><td>password</td><td>String</td><td>Bcrypt-hashed password (default: admin123)</td></tr>
+    </table>
+  </div>
+
+  <!-- 6. API ENDPOINTS -->
+  <div class="page-break"></div>
+  <h2><span class="num">6</span> REST API Endpoints</h2>
+
+  <h3>User Authentication &nbsp;<code>/api/userlogininfo</code></h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/signup</code></td><td>Register new user account — hashes password with bcrypt, saves to MongoDB</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/login</code></td><td>Validate email/password, generate OTP, send via Nodemailer to email</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/verify-otp</code></td><td>Verify OTP code, issue JWT token, return user object</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/me</code></td><td>Get logged-in user info (JWT protected)</td></tr>
+  </table>
+
+  <h3>User Profile &nbsp;<code>/api/userresume</code></h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/</code></td><td>Create/update user profile — handles file upload (Multer) for profilePic and resume PDF</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/by-email/:email</code></td><td>Fetch user profile by email — used by Navbar to load profile pic</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/:id</code></td><td>Fetch single profile by MongoDB ID</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code>/:id</code></td><td>Update profile by ID</td></tr>
+    <tr><td><span class="method del">DELETE</span></td><td><code>/:id</code></td><td>Delete profile</td></tr>
+  </table>
+
+  <h3>Employer Auth &nbsp;<code>/api/employer</code></h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/signup</code></td><td>Register new employer account with company name</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/login</code></td><td>Validate credentials, send OTP to employer email</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/verify-otp</code></td><td>Verify OTP, issue JWT token with role: 'employer'</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/me</code></td><td>Get employer profile (JWT protected)</td></tr>
+  </table>
+
+  <h3>Job Postings &nbsp;<code>/api/jobpostings</code></h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/</code></td><td>Public — returns all active job postings (isActive: true)</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/my/:employerId</code></td><td>Employer's own postings — all statuses</td></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/</code></td><td>Create new job posting — visible to seekers immediately</td></tr>
+    <tr><td><span class="method put">PUT</span></td><td><code>/:id</code></td><td>Edit job / toggle isActive (pause/activate)</td></tr>
+    <tr><td><span class="method del">DELETE</span></td><td><code>/:id</code></td><td>Delete a job posting</td></tr>
+  </table>
+
+  <h3>Job Applications &nbsp;<code>/api/jobapplications</code></h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/</code></td><td>Submit job application — saves name, email, jobTitle, company, location</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/</code></td><td>Get all applications (used by admin panel)</td></tr>
+  </table>
+
+  <h3>Admin &nbsp;<code>/api/admin</code></h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/login</code></td><td>Admin login — validates username/password, issues JWT with role: 'admin'</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/applications</code></td><td>All job applications (JWT admin protected)</td></tr>
+    <tr><td><span class="method get">GET</span></td><td><code>/profiles</code></td><td>All user profiles with resumes (JWT admin protected)</td></tr>
+  </table>
+
+  <h3>AI Resume Screening &nbsp;<code>/api/resume-screen</code></h3>
+  <table>
+    <tr><th>Method</th><th>Endpoint</th><th>Description</th></tr>
+    <tr><td><span class="method post">POST</span></td><td><code>/</code></td><td>Upload resume PDF + job title → extract text (pdf-parse) → send to Gemini AI → return score, grade, strengths, weaknesses, missing skills, suggestions, verdict</td></tr>
+  </table>
+
+  <!-- 7. FEATURES IN DETAIL -->
+  <div class="page-break"></div>
+  <h2><span class="num">7</span> Features In Detail</h2>
+
+  <div class="card">
+    <div class="card-title">🔐 Unified Login System (3-Role)</div>
+    <p>Single <code>/login</code> page with a role selector. User picks Job Seeker / Employer / Admin, then sees the appropriate form. Each role has its own JWT token with a role claim.</p>
+    <div class="flow">
+      <div class="flow-step">Select Role</div><div class="flow-arrow">→</div>
+      <div class="flow-step cyan">Enter Credentials</div><div class="flow-arrow">→</div>
+      <div class="flow-step emerald">Receive OTP Email</div><div class="flow-arrow">→</div>
+      <div class="flow-step violet">Verify OTP</div><div class="flow-arrow">→</div>
+      <div class="flow-step orange">JWT Issued → Redirect</div>
+    </div>
+    <ul class="plain">
+      <li>Passwords hashed with <strong>bcryptjs</strong> (salt rounds: 10)</li>
+      <li>OTP generated as 6-digit random number, hashed before storage, expires in 10 minutes</li>
+      <li>JWT contains: id, name/username, email, role — signed with JWT_SECRET, expires in 7 days</li>
+      <li>Admin uses username/password only (no OTP) for faster access</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">📄 User Profile & Resume Upload</div>
+    <p>After login, users can upload a profile photo and PDF resume, add bio, LinkedIn URL, and qualifications. Files are stored in <code>backend/uploads/</code> and served as static files.</p>
+    <ul class="plain">
+      <li><strong>Multer</strong>: handles multipart/form-data with disk storage strategy</li>
+      <li>Profile photos shown in Navbar icon and Profile page</li>
+      <li>Resume viewable as link from profile page and admin panel</li>
+      <li>Upsert strategy: one profile per email (create if not exists, update if exists)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">💼 Job Listings (Static + Live)</div>
+    <p>Jobs page shows 24 pre-loaded static jobs AND live employer-posted jobs fetched from MongoDB. All salaries in INR. Employer-posted jobs are marked with an "Employer Posted" badge.</p>
+    <ul class="plain">
+      <li>Static jobs: hardcoded in Jobs.jsx and Foundjobs.jsx arrays</li>
+      <li>Live jobs: fetched from <code>GET /api/jobpostings</code> on page load</li>
+      <li>Foundjobs page includes a real-time search bar filtering by title, company, or location</li>
+      <li>Apply Now button sends application to MongoDB via <code>POST /api/jobapplications</code></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🏢 Employer Dashboard</div>
+    <p>Employers get a full-featured dashboard to manage job postings after login.</p>
+    <ul class="plain">
+      <li>Post new jobs with title, description, location, type, salary, skills</li>
+      <li>Edit existing postings inline</li>
+      <li>Pause / Activate toggle — paused jobs hidden from seekers</li>
+      <li>Delete postings with confirmation</li>
+      <li>Stats cards: Total Postings, Active, Paused</li>
+      <li>Posted jobs appear instantly on /jobs and /foundjobs for all logged-in seekers</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🛡 Admin Panel</div>
+    <p>Admins access a protected dashboard with 3 tabs:</p>
+    <ul class="plain">
+      <li><strong>Job Applications tab</strong>: full table of all applications with name, email, job, company, location, date</li>
+      <li><strong>User Profiles tab</strong>: card view of all profiles with photo, bio, qualifications, LinkedIn, resume download</li>
+      <li><strong>AI Resume Screening tab</strong>: enter a job role, click Run — system fetches all uploaded resumes, sends each to Gemini AI, ranks candidates by score with progress bar</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🤖 AI Resume Screening (Gemini)</div>
+    <p>The admin AI screening feature works as follows:</p>
+    <div class="flow">
+      <div class="flow-step">Admin enters job role</div><div class="flow-arrow">→</div>
+      <div class="flow-step cyan">Fetch all PDFs from /uploads</div><div class="flow-arrow">→</div>
+      <div class="flow-step emerald">pdf-parse extracts text</div><div class="flow-arrow">→</div>
+      <div class="flow-step violet">Gemini AI analyses</div><div class="flow-arrow">→</div>
+      <div class="flow-step orange">Ranked results shown</div>
+    </div>
+    <ul class="plain">
+      <li>Model used: <strong>gemini-1.5-flash</strong> (fast, free tier available)</li>
+      <li>AI returns structured JSON: score (0-100), grade (A-F), summary, strengths[], weaknesses[], missingSkills[], suggestions[], verdict</li>
+      <li>Results sorted by score descending — top candidate highlighted with gold badge</li>
+      <li>Each result shows animated score ring, strengths, missing skills, and View Resume link</li>
+    </ul>
+  </div>
+
+  <!-- 8. FRONTEND PAGES -->
+  <div class="page-break"></div>
+  <h2><span class="num">8</span> Frontend Pages & Components</h2>
+
+  <table>
+    <tr><th>Page / Component</th><th>Route</th><th>Access</th><th>Description</th></tr>
+    <tr><td><strong>Home.jsx</strong></td><td>/</td><td>Public</td><td>Landing page with hero section. Redirects to /jobs if already logged in.</td></tr>
+    <tr><td><strong>Login.jsx</strong></td><td>/login</td><td>Public</td><td>Unified 3-role login with role selector, OTP flow, and signup forms.</td></tr>
+    <tr><td><strong>Jobs.jsx</strong></td><td>/jobs</td><td>Logged-in User</td><td>24 static jobs + live employer jobs. One-tap apply. Redirects to login if not authenticated.</td></tr>
+    <tr><td><strong>Foundjobs.jsx</strong></td><td>/foundjobs</td><td>Logged-in User</td><td>All jobs with search bar filtering by title/company/location.</td></tr>
+    <tr><td><strong>Profile.jsx</strong></td><td>/profile</td><td>Logged-in User</td><td>View/edit profile, upload photo and resume PDF. Toggle edit mode.</td></tr>
+    <tr><td><strong>AdminPanel.jsx</strong></td><td>/admin/panel</td><td>Admin only</td><td>Dashboard with Applications, Profiles, and AI Screening tabs.</td></tr>
+    <tr><td><strong>EmployerDashboard.jsx</strong></td><td>/employer/dashboard</td><td>Employer only</td><td>Post/edit/delete/toggle job postings. Stats cards. No Navbar/Footer.</td></tr>
+    <tr><td><strong>Navbar.jsx</strong></td><td>Global</td><td>All</td><td>Sticky navbar with profile icon dropdown. Shows user or employer profile based on who is logged in.</td></tr>
+    <tr><td><strong>Footer.jsx</strong></td><td>Global</td><td>All</td><td>Quick links to all pages using React Router Link.</td></tr>
+    <tr><td><strong>Aboutus.jsx</strong></td><td>/aboutus</td><td>Public</td><td>About the portal.</td></tr>
+    <tr><td><strong>Applynow.jsx</strong></td><td>/applynow</td><td>Public</td><td>Apply now section.</td></tr>
+  </table>
+
+  <!-- 9. AUTHENTICATION FLOW -->
+  <h2><span class="num">9</span> Authentication & Security</h2>
+
+  <div class="card">
+    <div class="card-title">JWT Token Strategy</div>
+    <table>
+      <tr><th>Role</th><th>Storage</th><th>Token Key</th><th>Redirect After Login</th></tr>
+      <tr><td>Job Seeker</td><td>localStorage</td><td>jobPortalUser (user object)</td><td>/jobs</td></tr>
+      <tr><td>Employer</td><td>localStorage</td><td>employerUser + employerToken</td><td>/employer/dashboard</td></tr>
+      <tr><td>Admin</td><td>sessionStorage</td><td>adminUser</td><td>/admin/panel</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Security Measures</div>
+    <ul class="plain">
+      <li><strong>bcryptjs</strong>: all passwords hashed with 10 salt rounds before storage</li>
+      <li><strong>OTP</strong>: 6-digit random code, SHA-256 hashed before DB storage, 10-minute expiry</li>
+      <li><strong>JWT</strong>: signed with JWT_SECRET from .env, includes role claim for route protection</li>
+      <li><strong>JWT Middleware</strong>: backend/middleware/auth.js — verifyToken, authUser, authEmployer, authAdmin</li>
+      <li><strong>Environment variables</strong>: all secrets (DB URL, JWT secret, SMTP creds, Gemini API key) stored in .env — never in code</li>
+      <li><strong>Auth guards</strong>: frontend pages check localStorage on mount, redirect to /login if no session</li>
+    </ul>
+  </div>
+
+  <!-- 10. FILE STRUCTURE -->
+  <div class="page-break"></div>
+  <h2><span class="num">10</span> Project File Structure</h2>
+
+  <div class="card">
+    <div class="card-title">Backend Structure</div>
+    <pre style="font-family:Consolas,monospace;font-size:11px;color:#334155;line-height:1.8;">
+backend/
+├── server.js              ← Express app entry, all routes registered
+├── .env                   ← Environment variables (secrets)
+├── package.json
+├── confg/
+│   └── db.js              ← MongoDB connection via Mongoose
+├── models/
+│   ├── useraccount.js     ← Job seeker account schema
+│   ├── userresume.js      ← User profile + resume schema
+│   ├── employer.js        ← Employer account schema
+│   ├── jobposting.js      ← Employer job posting schema
+│   ├── jobapplication.js  ← Job application schema
+│   └── admin.js           ← Admin account schema
+├── routes/
+│   ├── userlogininfo.js   ← User auth (signup/login/OTP/JWT)
+│   ├── userresume.js      ← User profile CRUD + file upload
+│   ├── userinfo.js        ← User info CRUD
+│   ├── employer.js        ← Employer auth + profile
+│   ├── jobpostings.js     ← Job posting CRUD
+│   ├── jobapplication.js  ← Job application CRUD
+│   ├── admin.js           ← Admin login + data endpoints
+│   └── resumescreen.js    ← AI resume screening (Gemini)
+├── middleware/
+│   └── auth.js            ← JWT verification middleware
+├── utils/
+│   ├── otp.js             ← OTP generation + hashing
+│   └── mailer.js          ← Nodemailer SMTP configuration
+└── uploads/               ← Stored profile pics + resume PDFs</pre>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Frontend Structure</div>
+    <pre style="font-family:Consolas,monospace;font-size:11px;color:#334155;line-height:1.8;">
+frontend/
+├── index.html
+├── vite.config.js
+├── tailwind.config.js
+├── postcss.config.js
+├── package.json
+└── src/
+    ├── main.jsx               ← React DOM render entry
+    ├── App.jsx                ← Router setup, Layout component, all routes
+    ├── App.css
+    ├── index.css              ← Tailwind directives + custom .input-style
+    ├── utils/
+    │   └── auth.js            ← JWT token helpers (getToken, setToken, authHeader)
+    └── assets/
+        └── components/
+            ├── Navbar.jsx         ← Sticky nav, profile icon, dropdown (user + employer)
+            ├── Footer.jsx         ← Quick links with React Router Link
+            ├── Home.jsx           ← Landing hero page
+            ├── Login.jsx          ← Unified 3-role login page
+            ├── Jobs.jsx           ← 24 static + live jobs, one-tap apply
+            ├── Foundjobs.jsx      ← Jobs with search bar
+            ├── Profile.jsx        ← User profile view/edit + file upload
+            ├── Aboutus.jsx        ← About page
+            ├── Applynow.jsx       ← Apply now section
+            ├── AdminPanel.jsx     ← Admin dashboard (3 tabs + AI screening)
+            ├── EmployerDashboard.jsx ← Employer job management
+            └── EmployerProfile.jsx   ← Employer company profile</pre>
+  </div>
+
+  <!-- 11. ENV VARIABLES -->
+  <h2><span class="num">11</span> Environment Variables (.env)</h2>
+
+  <table>
+    <tr><th>Variable</th><th>Example Value</th><th>Used For</th></tr>
+    <tr><td>MONGO_URL</td><td>mongodb://localhost:27017/jobportal</td><td>MongoDB connection string</td></tr>
+    <tr><td>PORT</td><td>5000</td><td>Backend server port</td></tr>
+    <tr><td>JWT_SECRET</td><td>jobportal_super_secret_key</td><td>Signing JWT tokens</td></tr>
+    <tr><td>JWT_EXPIRES_IN</td><td>7d</td><td>JWT token lifetime</td></tr>
+    <tr><td>GEMINI_API_KEY</td><td>AIzaSy...</td><td>Google Gemini AI for resume screening</td></tr>
+    <tr><td>SMTP_HOST</td><td>smtp.gmail.com</td><td>Email server for OTP delivery</td></tr>
+    <tr><td>SMTP_PORT</td><td>587</td><td>SMTP port (TLS)</td></tr>
+    <tr><td>SMTP_USER</td><td>youremail@gmail.com</td><td>Gmail sender address</td></tr>
+    <tr><td>SMTP_PASS</td><td>app-password-here</td><td>Gmail App Password (not your main password)</td></tr>
+    <tr><td>SMTP_FROM</td><td>Job Portal &lt;email@gmail.com&gt;</td><td>Display name in sent emails</td></tr>
+  </table>
+
+  <!-- 12. HOW TO RUN -->
+  <div class="page-break"></div>
+  <h2><span class="num">12</span> How to Run the Project</h2>
+
+  <div class="card">
+    <div class="card-title">Prerequisites</div>
+    <ul class="plain">
+      <li>Node.js v18+ installed</li>
+      <li>MongoDB running locally on port 27017 (or MongoDB Atlas connection string)</li>
+      <li>Gmail account with App Password enabled (for OTP emails)</li>
+      <li>Google Gemini API key from <strong>aistudio.google.com/app/apikey</strong> (free)</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Step 1 — Start Backend</div>
+    <pre style="font-family:Consolas,monospace;font-size:12px;background:#f8fafc;padding:12px;border-radius:8px;color:#0f172a;">
+cd backend
+npm install
+# Edit .env with your MongoDB URL, SMTP credentials, and Gemini API key
+npm start
+# Server running on http://localhost:5000</pre>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Step 2 — Start Frontend</div>
+    <pre style="font-family:Consolas,monospace;font-size:12px;background:#f8fafc;padding:12px;border-radius:8px;color:#0f172a;">
+cd frontend
+npm install
+npm run dev
+# App running on http://localhost:5173</pre>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Default Credentials</div>
+    <table>
+      <tr><th>Role</th><th>Username / Email</th><th>Password</th></tr>
+      <tr><td>Admin</td><td>admin</td><td>admin123 (auto-seeded on first run)</td></tr>
+      <tr><td>Job Seeker</td><td>Register via /login</td><td>Your choice (OTP required)</td></tr>
+      <tr><td>Employer</td><td>Register via /login</td><td>Your choice (OTP required)</td></tr>
+    </table>
+  </div>
+
+  <div class="divider"></div>
+  <p style="text-align:center;color:#94a3b8;font-size:12px;padding-bottom:40px;">Job Portal — ASD Final Project &nbsp;|&nbsp; MERN Stack &nbsp;|&nbsp; React + Node.js + MongoDB + Gemini AI</p>
+
+</div>
+
+</body>
+</html>
