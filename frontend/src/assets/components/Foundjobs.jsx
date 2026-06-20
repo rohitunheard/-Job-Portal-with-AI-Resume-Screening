@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { USER_TOKEN_KEY, getToken, removeToken } from '../../utils/auth'
 
 const staticJobs = [
   {
@@ -53,29 +54,77 @@ const staticJobs = [
 ]
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const keyPart = (value) => String(value || '').trim().toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+const applicationKeyFor = (job) => job.isLive
+  ? `job:${job.id}`
+  : `static:${keyPart(job.title)}:${keyPart(job.company)}:${keyPart(job.location)}`
 
 export default function Foundjobs() {
-  const [user, setUser] = useState(null)
+  const [user] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('jobPortalUser') || 'null')
+    } catch {
+      return null
+    }
+  })
   const [message, setMessage] = useState('')
-  const [appliedJobIds, setAppliedJobIds] = useState([])
-  const [isApplying, setIsApplying] = useState(false)
+  const [appliedJobKeys, setAppliedJobKeys] = useState([])
+  const [applyingJobId, setApplyingJobId] = useState('')
   const [liveJobs, setLiveJobs] = useState([])
+  const [resumeReady, setResumeReady] = useState(false)
+  const [profileChecked, setProfileChecked] = useState(false)
   const [search, setSearch] = useState('')
   const navigate = useNavigate()
 
   useEffect(() => {
-    const savedUser = localStorage.getItem('jobPortalUser')
-    if (!savedUser) { navigate('/login'); return }
-    try { setUser(JSON.parse(savedUser)) } catch { localStorage.removeItem('jobPortalUser'); navigate('/login') }
-    fetchLiveJobs()
-  }, [])
+    if (!user || !getToken(USER_TOKEN_KEY)) {
+      localStorage.removeItem('jobPortalUser')
+      removeToken(USER_TOKEN_KEY)
+      navigate('/login')
+      return
+    }
 
-  const fetchLiveJobs = async () => {
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/jobpostings`)
-      if (res.ok) setLiveJobs(await res.json())
-    } catch {}
-  }
+    const loadCandidateState = async () => {
+      try {
+        const [profileRes, applicationsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/userresume/by-email/${encodeURIComponent(user.email)}`),
+          fetch(`${API_BASE_URL}/api/jobapplications/mine`, {
+            headers: { Authorization: `Bearer ${getToken(USER_TOKEN_KEY)}` },
+          }),
+        ])
+        if (applicationsRes.status === 401) {
+          localStorage.removeItem('jobPortalUser')
+          removeToken(USER_TOKEN_KEY)
+          navigate('/login')
+          return
+        }
+        if (profileRes.ok) {
+          const profile = await profileRes.json()
+          setResumeReady(Boolean(profile.resumeFile?.toLowerCase().endsWith('.pdf')))
+        }
+        if (applicationsRes.ok) {
+          const applications = await applicationsRes.json()
+          setAppliedJobKeys(applications.map((application) => application.applicationKey))
+        }
+      } catch (error) {
+        setMessage(error.message || 'Could not load your application information.')
+      } finally {
+        setProfileChecked(true)
+      }
+    }
+
+    const fetchLiveJobs = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/jobpostings`)
+        if (res.ok) setLiveJobs(await res.json())
+      } catch (error) {
+        setMessage(error.message || 'Could not load employer-posted jobs.')
+      }
+    }
+
+    loadCandidateState()
+    fetchLiveJobs()
+  }, [navigate, user])
 
   const allJobs = [
     ...liveJobs.map(j => ({ id: j._id, title: j.title, company: j.companyName, location: j.location, type: j.type, salary: j.salary, description: j.description, skills: j.skills, isLive: true })),
@@ -90,19 +139,40 @@ export default function Foundjobs() {
 
   const handleApply = async (job) => {
     if (!user) return
+    if (!resumeReady) {
+      navigate('/profile?edit=true')
+      return
+    }
     setMessage('')
-    setIsApplying(true)
+    setApplyingJobId(job.id)
     try {
       const response = await fetch(`${API_BASE_URL}/api/jobapplications`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: user.name, email: user.email, jobTitle: job.title, company: job.company, location: job.location }),
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken(USER_TOKEN_KEY)}`,
+        },
+        body: JSON.stringify(job.isLive
+          ? { jobId: job.id }
+          : {
+              staticJobId: job.id,
+              jobTitle: job.title,
+              company: job.company,
+              location: job.location,
+            }),
       })
       const data = await response.json()
+      if (response.status === 401) {
+        localStorage.removeItem('jobPortalUser')
+        removeToken(USER_TOKEN_KEY)
+        navigate('/login')
+        return
+      }
       if (!response.ok) throw new Error(data.message || 'Could not submit application')
-      setAppliedJobIds((current) => [...current, job.id])
+      setAppliedJobKeys((current) => [...current, data.applicationKey])
       setMessage(`Applied to ${job.title} at ${job.company}.`)
     } catch (error) { setMessage(error.message) }
-    finally { setIsApplying(false) }
+    finally { setApplyingJobId('') }
   }
 
   return (
@@ -121,9 +191,18 @@ export default function Foundjobs() {
 
         {message && <div className="mt-6 rounded-2xl border border-cyan-500/20 bg-cyan-500/10 px-4 py-3 text-sm text-cyan-100">{message}</div>}
 
+        {profileChecked && !resumeReady && (
+          <div className="mt-6 flex flex-col gap-3 rounded-2xl border border-amber-400/30 bg-amber-400/10 px-5 py-4 text-sm text-amber-100 sm:flex-row sm:items-center sm:justify-between">
+            <span>You must upload a PDF résumé before applying so employers can use AI screening.</span>
+            <Link to="/profile?edit=true" className="font-semibold text-amber-300 underline underline-offset-4">Upload résumé</Link>
+          </div>
+        )}
+
         <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {filtered.map((job) => {
-            const isApplied = appliedJobIds.includes(job.id)
+            const applicationKey = applicationKeyFor(job)
+            const isApplied = appliedJobKeys.includes(applicationKey)
+            const isApplying = applyingJobId === job.id
             return (
               <article key={job.id} className="group rounded-3xl border border-white/10 bg-white/5 p-6 shadow-lg transition hover:-translate-y-1 hover:border-cyan-400/40">
                 <div className="flex items-start justify-between gap-4">
@@ -146,9 +225,9 @@ export default function Foundjobs() {
                   <span>{job.location}</span>
                   <span>One-tap apply</span>
                 </div>
-                <button type="button" onClick={() => handleApply(job)} disabled={isApplying || isApplied}
+                <button type="button" onClick={() => handleApply(job)} disabled={Boolean(applyingJobId) || isApplied}
                   className={`mt-5 w-full rounded-2xl px-4 py-3 text-sm font-semibold transition ${isApplied ? 'cursor-not-allowed bg-emerald-500/20 text-emerald-200' : 'bg-cyan-500 text-white hover:bg-cyan-400 disabled:opacity-70 disabled:cursor-not-allowed'}`}>
-                  {isApplied ? 'Applied' : isApplying ? 'Applying...' : 'Apply Now'}
+                  {isApplied ? 'Applied' : isApplying ? 'Applying...' : !resumeReady ? 'Upload Resume to Apply' : 'Apply Now'}
                 </button>
               </article>
             )

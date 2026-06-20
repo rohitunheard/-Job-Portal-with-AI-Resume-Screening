@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -6,22 +6,26 @@ const EMPTY_FORM = { title: '', description: '', location: '', type: 'Full-time'
 const TYPES = ['Full-time', 'Part-time', 'Contract', 'Freelance', 'Internship', 'Hybrid']
 
 export default function EmployerDashboard() {
-  const [employer, setEmployer] = useState(null)
+  const [employer] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('employerUser') || 'null')
+    } catch {
+      return null
+    }
+  })
   const [jobs, setJobs] = useState([])
+  const [applications, setApplications] = useState([])
   const [form, setForm] = useState(EMPTY_FORM)
   const [editingId, setEditingId] = useState(null)
   const [showForm, setShowForm] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [applicationsLoading, setApplicationsLoading] = useState(true)
+  const [screeningId, setScreeningId] = useState('')
+  const [applicantJobFilter, setApplicantJobFilter] = useState('')
+  const [applicantMessage, setApplicantMessage] = useState({ msg: '', ok: true })
   const [status, setStatus] = useState({ msg: '', ok: true })
+  const applicantsRef = useRef(null)
   const navigate = useNavigate()
-
-  useEffect(() => {
-    const saved = localStorage.getItem('employerUser')
-    if (!saved) { navigate('/login'); return }
-    const emp = JSON.parse(saved)
-    setEmployer(emp)
-    fetchJobs(emp.id)
-  }, [])
 
   // Get stored token
   const getToken = () => localStorage.getItem('employerToken') || ''
@@ -31,6 +35,12 @@ export default function EmployerDashboard() {
     'Authorization': `Bearer ${getToken()}`,
   })
 
+  const handleLogout = () => {
+    localStorage.removeItem('employerUser')
+    localStorage.removeItem('employerToken')
+    navigate('/login')
+  }
+
   const fetchJobs = async (id) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/jobpostings/my/${id}`, {
@@ -39,7 +49,96 @@ export default function EmployerDashboard() {
       if (res.status === 401) { handleLogout(); return }
       const data = await res.json()
       setJobs(Array.isArray(data) ? data : [])
-    } catch {}
+    } catch (error) {
+      setStatus({ msg: error.message || 'Could not load job postings.', ok: false })
+    }
+  }
+
+  useEffect(() => {
+    if (!employer || !getToken()) {
+      localStorage.removeItem('employerUser')
+      localStorage.removeItem('employerToken')
+      navigate('/login')
+      return
+    }
+
+    const timer = setTimeout(async () => {
+      try {
+        const [jobsRes, applicationsRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/jobpostings/my/${employer.id}`, {
+            headers: { Authorization: `Bearer ${getToken()}` },
+          }),
+          fetch(`${API_BASE_URL}/api/jobapplications/employer`, {
+            headers: { Authorization: `Bearer ${getToken()}` },
+          }),
+        ])
+
+        if (jobsRes.status === 401 || applicationsRes.status === 401) {
+          localStorage.removeItem('employerUser')
+          localStorage.removeItem('employerToken')
+          navigate('/login')
+          return
+        }
+
+        const jobsData = await jobsRes.json()
+        const applicationsData = await applicationsRes.json()
+        if (!applicationsRes.ok) throw new Error(applicationsData.message || 'Could not load applicants')
+        setJobs(Array.isArray(jobsData) ? jobsData : [])
+        setApplications(Array.isArray(applicationsData) ? applicationsData : [])
+      } catch (error) {
+        setApplicantMessage({ msg: error.message || 'Could not load employer dashboard.', ok: false })
+      } finally {
+        setApplicationsLoading(false)
+      }
+    }, 0)
+
+    return () => clearTimeout(timer)
+  }, [employer, navigate])
+
+  const openApplicants = (jobId = '') => {
+    setApplicantJobFilter(jobId)
+    setTimeout(() => applicantsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
+  }
+
+  const handleScreen = async (applicationId) => {
+    setScreeningId(applicationId)
+    setApplicantMessage({ msg: '', ok: true })
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/jobapplications/${applicationId}/screen`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${getToken()}` },
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'AI screening failed')
+      setApplications((current) => current.map((application) =>
+        application._id === applicationId
+          ? { ...application, aiScreening: data.analysis, screenedAt: data.screenedAt }
+          : application
+      ))
+      setApplicantMessage({ msg: 'AI screening completed for this candidate.', ok: true })
+    } catch (err) {
+      setApplicantMessage({ msg: err.message, ok: false })
+    } finally {
+      setScreeningId('')
+    }
+  }
+
+  const handleApplicationStatus = async (applicationId, nextStatus) => {
+    setApplicantMessage({ msg: '', ok: true })
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/jobapplications/${applicationId}/status`, {
+        method: 'PATCH',
+        headers: authHeaders(),
+        body: JSON.stringify({ status: nextStatus }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.message || 'Could not update candidate status')
+      setApplications((current) => current.map((application) =>
+        application._id === applicationId ? { ...application, status: data.status } : application
+      ))
+    } catch (err) {
+      setApplicantMessage({ msg: err.message, ok: false })
+    }
   }
 
   const handleSubmit = async (e) => {
@@ -80,7 +179,9 @@ export default function EmployerDashboard() {
         headers: { 'Authorization': `Bearer ${getToken()}` }
       })
       fetchJobs(employer.id)
-    } catch {}
+    } catch (error) {
+      setStatus({ msg: error.message || 'Could not delete job.', ok: false })
+    }
   }
 
   const handleToggle = async (job) => {
@@ -91,13 +192,9 @@ export default function EmployerDashboard() {
         body: JSON.stringify({ isActive: !job.isActive })
       })
       fetchJobs(employer.id)
-    } catch {}
-  }
-
-  const handleLogout = () => {
-    localStorage.removeItem('employerUser')
-    localStorage.removeItem('employerToken')
-    navigate('/login')
+    } catch (error) {
+      setStatus({ msg: error.message || 'Could not update job.', ok: false })
+    }
   }
 
   const inputClass = 'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30'
@@ -129,6 +226,9 @@ export default function EmployerDashboard() {
             className="rounded-full bg-violet-500 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-400 transition">
             + Post Job
           </button>
+          <button onClick={() => openApplicants()} className="rounded-full border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 transition">
+            Applicants ({applications.length})
+          </button>
           <button onClick={handleLogout} className="rounded-full border border-rose-500/30 px-4 py-2 text-sm text-rose-400 hover:bg-rose-500/10 transition">
             Log out
           </button>
@@ -137,7 +237,7 @@ export default function EmployerDashboard() {
 
       <div className="mx-auto max-w-5xl px-6 py-8 sm:px-10">
         {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="grid grid-cols-2 gap-4 mb-8 sm:grid-cols-4">
           <div className="rounded-2xl border border-violet-400/20 bg-white/5 p-4">
             <p className="text-2xl font-bold text-violet-400">{jobs.length}</p>
             <p className="text-xs text-slate-400 mt-1">Total Postings</p>
@@ -150,6 +250,10 @@ export default function EmployerDashboard() {
             <p className="text-2xl font-bold text-slate-400">{jobs.filter(j => !j.isActive).length}</p>
             <p className="text-xs text-slate-400 mt-1">Paused Jobs</p>
           </div>
+          <button onClick={() => openApplicants()} className="rounded-2xl border border-cyan-400/20 bg-white/5 p-4 text-left transition hover:bg-cyan-400/10">
+            <p className="text-2xl font-bold text-cyan-400">{applications.length}</p>
+            <p className="text-xs text-slate-400 mt-1">Total Applicants</p>
+          </button>
         </div>
 
         {/* Empty state with CTA */}
@@ -244,6 +348,9 @@ export default function EmployerDashboard() {
                     {job.skills && <p className="mt-1 text-xs text-slate-500">Skills: {job.skills}</p>}
                   </div>
                   <div className="flex flex-col gap-2 flex-shrink-0">
+                    <button onClick={() => openApplicants(job._id)} className="rounded-xl border border-cyan-400/20 px-3 py-1.5 text-xs text-cyan-300 hover:bg-cyan-400/10 transition">
+                      Applicants ({applications.filter((application) => String(application.jobId?._id || application.jobId) === job._id).length})
+                    </button>
                     <button onClick={() => handleEdit(job)} className="rounded-xl border border-white/10 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/10 transition">Edit</button>
                     <button onClick={() => handleToggle(job)} className={`rounded-xl border px-3 py-1.5 text-xs transition ${job.isActive ? 'border-yellow-400/20 text-yellow-400 hover:bg-yellow-400/10' : 'border-emerald-400/20 text-emerald-400 hover:bg-emerald-400/10'}`}>
                       {job.isActive ? 'Pause' : 'Activate'}
@@ -256,6 +363,123 @@ export default function EmployerDashboard() {
             ))}
           </div>
         )}
+
+        {/* Applicants Workspace */}
+        <section ref={applicantsRef} className="mt-10 scroll-mt-24">
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">Candidate Pipeline</p>
+              <h2 className="mt-1 text-2xl font-semibold">Applied Candidates</h2>
+              <p className="mt-1 text-sm text-slate-400">Review résumés, screen candidates against the posted role, and update hiring status.</p>
+            </div>
+            <select
+              value={applicantJobFilter}
+              onChange={(event) => setApplicantJobFilter(event.target.value)}
+              className="rounded-xl border border-white/10 bg-slate-900 px-4 py-2.5 text-sm text-white outline-none focus:border-cyan-400"
+            >
+              <option value="">All job postings</option>
+              {jobs.map((job) => <option key={job._id} value={job._id}>{job.title}</option>)}
+            </select>
+          </div>
+
+          {applicantMessage.msg && (
+            <div className={`mb-4 rounded-xl border px-4 py-3 text-sm ${applicantMessage.ok ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200' : 'border-rose-500/30 bg-rose-500/10 text-rose-200'}`}>
+              {applicantMessage.msg}
+            </div>
+          )}
+
+          {applicationsLoading ? (
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center text-sm text-slate-400">Loading applicants...</div>
+          ) : applications.filter((application) => !applicantJobFilter || String(application.jobId?._id || application.jobId) === applicantJobFilter).length === 0 ? (
+            <div className="rounded-3xl border border-white/10 bg-white/5 p-10 text-center">
+              <p className="font-semibold text-white">No applications yet</p>
+              <p className="mt-1 text-sm text-slate-400">Candidates will appear here as soon as they apply to your posted jobs.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {applications
+                .filter((application) => !applicantJobFilter || String(application.jobId?._id || application.jobId) === applicantJobFilter)
+                .map((application) => {
+                  const analysis = application.aiScreening
+                  const scoreColor = analysis?.score >= 80
+                    ? 'text-emerald-300 border-emerald-400/30 bg-emerald-400/10'
+                    : analysis?.score >= 60
+                      ? 'text-cyan-300 border-cyan-400/30 bg-cyan-400/10'
+                      : 'text-amber-300 border-amber-400/30 bg-amber-400/10'
+
+                  return (
+                    <article key={application._id} className="rounded-3xl border border-white/10 bg-white/5 p-5 backdrop-blur">
+                      <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="text-lg font-semibold text-white">{application.name}</h3>
+                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                              application.status === 'Shortlisted'
+                                ? 'bg-emerald-500/15 text-emerald-300'
+                                : application.status === 'Rejected'
+                                  ? 'bg-rose-500/15 text-rose-300'
+                                  : 'bg-violet-500/15 text-violet-300'
+                            }`}>{application.status}</span>
+                            {analysis && <span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${scoreColor}`}>AI Match {analysis.score}%</span>}
+                          </div>
+                          <p className="mt-1 text-sm text-slate-300">{application.email}</p>
+                          <p className="mt-3 text-sm font-medium text-cyan-300">{application.jobId?.title || application.jobTitle}</p>
+                          <p className="text-xs text-slate-500">Applied {new Date(application.createdAt).toLocaleDateString()}</p>
+
+                          {analysis && (
+                            <div className="mt-4 rounded-2xl border border-white/10 bg-slate-950/50 p-4">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="text-sm font-semibold text-white">{analysis.verdict}</span>
+                                <span className="text-xs text-slate-500">Grade {analysis.grade}</span>
+                              </div>
+                              <p className="mt-2 text-sm leading-relaxed text-slate-300">{analysis.summary}</p>
+                              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-wider text-emerald-400">Strengths</p>
+                                  <p className="mt-1 text-xs text-slate-400">{analysis.strengths?.join(' • ') || '—'}</p>
+                                </div>
+                                <div>
+                                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-400">Missing skills</p>
+                                  <p className="mt-1 text-xs text-slate-400">{analysis.missingSkills?.join(' • ') || 'None identified'}</p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex w-full flex-col gap-2 lg:w-48">
+                          <a
+                            href={`${API_BASE_URL}/uploads/${application.resumeFile}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="rounded-xl border border-white/10 px-3 py-2 text-center text-xs font-semibold text-slate-200 transition hover:bg-white/10"
+                          >
+                            View Résumé
+                          </a>
+                          <button
+                            onClick={() => handleScreen(application._id)}
+                            disabled={screeningId === application._id}
+                            className="rounded-xl bg-cyan-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-60"
+                          >
+                            {screeningId === application._id ? 'Screening with AI...' : analysis ? 'Run AI Again' : 'Screen with AI'}
+                          </button>
+                          <select
+                            value={application.status}
+                            onChange={(event) => handleApplicationStatus(application._id, event.target.value)}
+                            className="rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white outline-none focus:border-violet-400"
+                          >
+                            <option value="Applied">Applied</option>
+                            <option value="Shortlisted">Shortlisted</option>
+                            <option value="Rejected">Rejected</option>
+                          </select>
+                        </div>
+                      </div>
+                    </article>
+                  )
+                })}
+            </div>
+          )}
+        </section>
       </div>
     </div>
   )

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
-import { ADMIN_TOKEN_KEY, setToken } from '../../utils/auth'
+import { ADMIN_TOKEN_KEY, USER_TOKEN_KEY, setToken } from '../../utils/auth'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -98,6 +98,7 @@ export default function Login() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.message)
       localStorage.setItem('jobPortalUser', JSON.stringify(data.user))
+      setToken(USER_TOKEN_KEY, data.token || '')
       navigate('/jobs')
     } catch (err) { setStatus({ msg: err.message, ok: false }) }
     finally { setLoading(false) }

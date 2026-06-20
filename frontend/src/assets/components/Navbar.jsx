@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link, useLocation } from 'react-router-dom'
-import { ADMIN_TOKEN_KEY, getToken, removeToken } from '../../utils/auth'
+import { ADMIN_TOKEN_KEY, USER_TOKEN_KEY, getToken, removeToken } from '../../utils/auth'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 
@@ -90,6 +90,7 @@ export default function Navbar() {
 
   const handleUserLogout = () => {
     localStorage.removeItem('jobPortalUser')
+    removeToken(USER_TOKEN_KEY)
     setUser(null); setProfilePic(''); setDropdownOpen(false)
     navigate('/login')
   }

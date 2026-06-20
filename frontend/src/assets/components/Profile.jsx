@@ -177,8 +177,8 @@ export default function Profile() {
               <textarea rows={3} value={profile.qualifications} onChange={(e) => setProfile((p) => ({ ...p, qualifications: e.target.value }))} placeholder="e.g. B.Sc Computer Science, React, Node.js..." className="input-style" />
             </FormField>
 
-            <FormField label={`Upload Resume (PDF/DOCX)${savedResume ? ' — current file saved' : ''}`}>
-              <input type="file" accept=".pdf,.doc,.docx" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white file:mr-4 file:rounded-full file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-cyan-400" />
+            <FormField label={`Upload Resume (PDF required for applications and AI screening)${savedResume ? ' — current file saved' : ''}`}>
+              <input type="file" accept=".pdf,application/pdf" onChange={(e) => setResumeFile(e.target.files[0])} className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white file:mr-4 file:rounded-full file:border-0 file:bg-cyan-500 file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-cyan-400" />
             </FormField>
 
             <button type="submit" disabled={isSubmitting} className="w-full rounded-2xl bg-cyan-500 px-4 py-3 font-semibold text-white transition hover:bg-cyan-400 disabled:opacity-70 disabled:cursor-not-allowed">

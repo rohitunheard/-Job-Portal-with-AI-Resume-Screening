@@ -93,7 +93,7 @@ export default function ResumeScreener() {
               </svg>
             </div>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">Powered by Gemini AI</p>
+<p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">Powered by AI (OpenAI)</p>
               <h1 className="text-2xl font-semibold text-white">AI Resume Screener</h1>
               <p className="text-sm text-slate-400 mt-0.5">Upload your resume and get instant AI-powered feedback for any job role.</p>
             </div>
@@ -189,7 +189,7 @@ export default function ResumeScreener() {
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
               </svg>
-              <p className="text-slate-400 text-sm">Gemini AI is analyzing your resume...</p>
+              <p className="text-slate-400 text-sm">AI is analyzing your resume...</p>
             </div>
           )}
 
