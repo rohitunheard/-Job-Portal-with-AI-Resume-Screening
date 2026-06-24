@@ -1,3 +1,6 @@
 {
-    "geminicodeassist.updateChannel": "Insiders"
+    "geminicodeassist.updateChannel": "Insiders",
+    "projectManager.git.baseFolders": [
+        ""
+    ]
 }

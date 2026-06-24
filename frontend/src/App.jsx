@@ -8,7 +8,13 @@ import Aboutus from './assets/components/Aboutus'
 import Profile from './assets/components/Profile'
 import Footer from './assets/components/Footer'
 import AdminPanel from './assets/components/AdminPanel'
+import AdminLogin from './assets/components/AdminLogin';
 import EmployerDashboard from './assets/components/EmployerDashboard'
+import EmployerProfile from './assets/components/EmployerProfile'
+import EmployerLogin from './assets/components/EmployerLogin' // Import EmployerLogin
+import ResumeScreener from './assets/components/ResumeScreener'
+import Chat from './assets/components/Chat'
+
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 
 function Layout() {
@@ -21,15 +27,18 @@ function Layout() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/admin" element={<Login />} />
-        <Route path="/employer/login" element={<Login />} />
+        <Route path="/admin" element={<AdminLogin />} />
         <Route path="/admin/panel" element={<AdminPanel />} />
         <Route path="/employer/dashboard" element={<EmployerDashboard />} />
+        <Route path="/employer/profile" element={<EmployerProfile />} />
+        <Route path="/employer/login" element={<EmployerLogin />} />
         <Route path="/jobs" element={<Jobs />} />
         <Route path="/aboutus" element={<Aboutus />} />
         <Route path="/applynow" element={<Applynow />} />
+        <Route path="/resume-screener" element={<ResumeScreener />} />
         <Route path="/foundjobs" element={<Foundjobs />} />
         <Route path="/profile" element={<Profile />} />
+        <Route path="/chat" element={<Chat />} />
       </Routes>
       {!hideLayout && <Footer />}
     </>

@@ -8,6 +8,9 @@ const JobPosting = require('../models/jobposting')
 const Userresume = require('../models/userresume')
 const { authUser, authEmployer } = require('../middleware/auth')
 const { screenResumeBuffer } = require('../utils/resumeScreening')
+const Conversation = require('../models/Conversation');
+const { sendApplicationStatusEmail } = require('../utils/mailer');
+const { createNotification } = require('../utils/notifications');
 
 const uploadDir = path.join(__dirname, '..', 'uploads')
 const keyPart = (value) => String(value || '')
@@ -18,7 +21,48 @@ const keyPart = (value) => String(value || '')
 
 const employerApplications = async (employerId) => Jobapplication.find({ employerId })
   .populate('jobId', 'title description skills location type salary companyName')
+  .populate('applicantId', '_id name email')
   .sort({ createdAt: -1 })
+
+const ensureConversationForApplication = async (application) => {
+  if (!application?.employerId) return null
+
+  return Conversation.findOneAndUpdate(
+    { applicationId: application._id },
+    {
+      $setOnInsert: {
+        applicationId: application._id,
+        jobId: application.jobId || null,
+        seekerId: application.applicantId,
+        employerId: application.employerId,
+        members: [application.applicantId, application.employerId],
+      },
+      $set: {
+        jobTitle: application.jobTitle,
+        company: application.company,
+      },
+    },
+    { returnDocument: 'after', upsert: true, setDefaultsOnInsert: false }
+  )
+}
+
+const withConversationIds = async (applications) => {
+  const plainApplications = applications.map((application) =>
+    application.toObject ? application.toObject() : application
+  )
+  const applicationIds = plainApplications.map((application) => application._id)
+  const conversations = await Conversation.find({ applicationId: { $in: applicationIds } })
+    .select('_id applicationId')
+    .lean()
+  const conversationByApplication = new Map(
+    conversations.map((conversation) => [String(conversation.applicationId), conversation._id])
+  )
+
+  return plainApplications.map((application) => ({
+    ...application,
+    conversationId: conversationByApplication.get(String(application._id)) || null,
+  }))
+}
 
 // Candidate — apply once to a job. A saved resume is mandatory.
 router.post('/', authUser, async (req, res) => {
@@ -111,9 +155,9 @@ router.post('/', authUser, async (req, res) => {
 router.get('/mine', authUser, async (req, res) => {
   try {
     const applications = await Jobapplication.find({ applicantId: req.user.id })
-      .select('applicationKey jobId jobTitle company status createdAt')
+      .select('applicationKey jobId jobTitle company location status createdAt updatedAt employerId')
       .sort({ createdAt: -1 })
-    res.json(applications)
+    res.json(await withConversationIds(applications))
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
@@ -135,13 +179,65 @@ router.patch('/:id/status', authEmployer, async (req, res) => {
     if (!allowed.includes(req.body.status))
       return res.status(400).json({ message: 'Invalid application status' })
 
-    const application = await Jobapplication.findOneAndUpdate(
-      { _id: req.params.id, employerId: req.user.id },
-      { $set: { status: req.body.status } },
-      { new: true }
-    )
+    const application = await Jobapplication.findOne({ _id: req.params.id, employerId: req.user.id })
     if (!application) return res.status(404).json({ message: 'Application not found' })
-    res.json(application)
+
+    const previousStatus = application.status
+    application.status = req.body.status
+    await application.save()
+
+    let conversation = null
+    if (application.status === 'Shortlisted') {
+      conversation = await ensureConversationForApplication(application)
+    } else {
+      conversation = await Conversation.findOne({ applicationId: application._id })
+    }
+
+    let emailDelivery = { sent: false, error: '' }
+    if (previousStatus !== application.status && ['Shortlisted', 'Rejected'].includes(application.status)) {
+      await createNotification(req, {
+        recipientId: application.applicantId,
+        recipientRole: 'user',
+        type: 'application_status',
+        title: application.status === 'Shortlisted' ? 'You were shortlisted' : 'Application update',
+        body: application.status === 'Shortlisted'
+          ? `You were shortlisted for ${application.jobTitle} at ${application.company}.`
+          : `You were not selected for ${application.jobTitle} at ${application.company}.`,
+        link: application.status === 'Shortlisted'
+          ? `/chat?applicationId=${application._id}`
+          : '/profile',
+        applicationId: application._id,
+        conversationId: conversation?._id || null,
+        jobId: application.jobId || null,
+        metadata: {
+          status: application.status,
+          jobTitle: application.jobTitle,
+          company: application.company,
+          location: application.location,
+        },
+      })
+
+      try {
+        await sendApplicationStatusEmail({
+          to: application.email,
+          name: application.name,
+          status: application.status,
+          jobTitle: application.jobTitle,
+          companyName: application.company,
+          location: application.location,
+        })
+        emailDelivery.sent = true
+      } catch (emailError) {
+        emailDelivery.error = emailError.message
+        console.error('Application status email failed:', emailError.message)
+      }
+    }
+
+    res.json({
+      ...application.toObject(),
+      conversationId: conversation?._id || null,
+      emailDelivery,
+    })
   } catch (error) {
     res.status(400).json({ message: error.message })
   }

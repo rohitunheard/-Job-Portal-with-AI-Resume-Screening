@@ -16,24 +16,12 @@ export default function Profile() {
   const [searchParams] = useSearchParams()
   const isEditMode = searchParams.get('edit') === 'true'
   const [editing, setEditing] = useState(isEditMode)
+  const [applications, setApplications] = useState([]);
+  const [appsLoading, setAppsLoading] = useState(true);
   const picInputRef = useRef()
   const navigate = useNavigate()
 
-  useEffect(() => {
-    const saved = localStorage.getItem('jobPortalUser')
-    if (!saved) { navigate('/login'); return }
-    try {
-      const u = JSON.parse(saved)
-      setUser(u)
-      setProfile((p) => ({ ...p, name: u.name || '' }))
-      fetchProfile(u.email)
-    } catch {
-      localStorage.removeItem('jobPortalUser')
-      navigate('/login')
-    }
-  }, [])
-
-  const fetchProfile = async (email) => {
+  async function fetchProfile(email) {
     try {
       const res = await fetch(`${API_BASE_URL}/api/userresume/by-email/${encodeURIComponent(email)}`)
       if (!res.ok) return
@@ -41,7 +29,50 @@ export default function Profile() {
       setProfile({ name: data.name || '', bio: data.bio || '', linkedin: data.linkedin || '', qualifications: data.qualifications || '' })
       setSavedProfilePic(data.profilePic || '')
       setSavedResume(data.resumeFile || '')
-    } catch {}
+    } catch {
+      // Profile details are optional for the application list.
+    }
+  }
+
+  async function fetchApplications() {
+    try {
+      const token = localStorage.getItem('jobPortalToken');
+      const res = await fetch(`${API_BASE_URL}/api/jobapplications/mine`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (res.status === 401) { navigate('/login'); return; }
+      const data = await res.json();
+      setApplications(Array.isArray(data) ? data : []);
+    } catch (error) {
+      console.error("Failed to fetch applications:", error);
+    } finally {
+      setAppsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const saved = localStorage.getItem('jobPortalUser')
+      if (!saved) { navigate('/login'); return }
+      try {
+        const u = JSON.parse(saved)
+        setUser(u)
+        setProfile((p) => ({ ...p, name: u.name || '' }))
+        fetchProfile(u.email)
+        fetchApplications()
+      } catch {
+        localStorage.removeItem('jobPortalUser')
+        navigate('/login')
+      }
+    }, 0)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const handleStartChat = (application) => {
+    if (!application?._id) return
+    navigate(`/chat?applicationId=${application._id}`, {
+      state: { applicationId: application._id },
+    })
   }
 
   const handlePicChange = (e) => {
@@ -185,6 +216,43 @@ export default function Profile() {
               {isSubmitting ? 'Saving...' : 'Save Profile'}
             </button>
           </form>
+        )}
+
+        {/* My Applications Section */}
+        {!editing && (
+          <div className="mt-6">
+            <h2 className="text-xl font-semibold text-white mb-4">My Applications</h2>
+            {appsLoading ? (
+              <div className="text-center text-slate-400">Loading applications...</div>
+            ) : applications.length === 0 ? (
+              <div className="text-center text-slate-400">You have not applied to any jobs yet.</div>
+            ) : (
+              <div className="space-y-4">
+                {applications.map(app => (
+                  <div key={app._id} className="rounded-2xl border border-white/10 bg-white/5 p-4 flex justify-between items-center">
+                    <div>
+                      <p className="font-semibold text-white">{app.jobTitle}</p>
+                      <p className="text-sm text-slate-400">{app.company}</p>
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                        app.status === 'Shortlisted' ? 'bg-emerald-500/15 text-emerald-300' :
+                        app.status === 'Rejected' ? 'bg-rose-500/15 text-rose-300' :
+                        'bg-violet-500/15 text-violet-300'
+                      }`}>
+                        {app.status}
+                      </span>
+                      {app.status === 'Shortlisted' && app.employerId && (
+                        <button onClick={() => handleStartChat(app)} className="rounded-full bg-cyan-500 px-4 py-2 text-xs font-semibold text-white hover:bg-cyan-400 transition">
+                          Chat with Employer
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
+import { io } from 'socket.io-client'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
 const EMPTY_FORM = { title: '', description: '', location: '', type: 'Full-time', salary: '', skills: '' }
@@ -24,7 +25,9 @@ export default function EmployerDashboard() {
   const [applicantJobFilter, setApplicantJobFilter] = useState('')
   const [applicantMessage, setApplicantMessage] = useState({ msg: '', ok: true })
   const [status, setStatus] = useState({ msg: '', ok: true })
+  const [chatUnreadCount, setChatUnreadCount] = useState(0)
   const applicantsRef = useRef(null)
+  const socketRef = useRef(null)
   const navigate = useNavigate()
 
   // Get stored token
@@ -95,6 +98,38 @@ export default function EmployerDashboard() {
     return () => clearTimeout(timer)
   }, [employer, navigate])
 
+  useEffect(() => {
+    if (!employer?.id || !getToken()) return
+
+    let ignore = false
+    const loadMessageNotifications = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/notifications`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        if (!ignore) {
+          setChatUnreadCount((Array.isArray(data) ? data : []).filter((item) => !item.read && item.type === 'message').length)
+        }
+      } catch {
+        // The dashboard can still work if notification polling fails.
+      }
+    }
+
+    loadMessageNotifications()
+    socketRef.current = io(API_BASE_URL)
+    socketRef.current.emit('addUser', { userId: employer.id, role: 'employer' })
+    socketRef.current.on('notification:new', (notification) => {
+      if (notification.type === 'message') setChatUnreadCount((count) => count + 1)
+    })
+
+    return () => {
+      ignore = true
+      socketRef.current?.disconnect()
+    }
+  }, [employer])
+
   const openApplicants = (jobId = '') => {
     setApplicantJobFilter(jobId)
     setTimeout(() => applicantsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0)
@@ -134,8 +169,17 @@ export default function EmployerDashboard() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.message || 'Could not update candidate status')
       setApplications((current) => current.map((application) =>
-        application._id === applicationId ? { ...application, status: data.status } : application
+        application._id === applicationId
+          ? { ...application, status: data.status, conversationId: data.conversationId || application.conversationId, updatedAt: data.updatedAt || application.updatedAt }
+          : application
       ))
+      const emailNote = data.emailDelivery?.error ? ' Email was not sent because SMTP is not configured correctly.' : ''
+      setApplicantMessage({
+        msg: nextStatus === 'Shortlisted'
+          ? `Candidate shortlisted. Chat is now available.${emailNote}`
+          : `Candidate marked as rejected.${emailNote}`,
+        ok: !data.emailDelivery?.error,
+      })
     } catch (err) {
       setApplicantMessage({ msg: err.message, ok: false })
     }
@@ -197,6 +241,13 @@ export default function EmployerDashboard() {
     }
   }
 
+  const handleStartChat = (application) => {
+    if (!application?._id) return
+    navigate(`/chat?applicationId=${application._id}`, {
+      state: { applicationId: application._id },
+    })
+  }
+
   const inputClass = 'w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white outline-none transition placeholder:text-slate-500 focus:border-violet-400 focus:ring-2 focus:ring-violet-400/30'
 
   return (
@@ -229,6 +280,14 @@ export default function EmployerDashboard() {
           <button onClick={() => openApplicants()} className="rounded-full border border-cyan-400/30 px-4 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 transition">
             Applicants ({applications.length})
           </button>
+          <Link to="/chat" className="relative rounded-full border border-sky-400/30 px-4 py-2 text-sm font-semibold text-sky-300 hover:bg-sky-400/10 transition">
+            Chats
+            {chatUnreadCount > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold text-white">
+                {chatUnreadCount > 9 ? '9+' : chatUnreadCount}
+              </span>
+            )}
+          </Link>
           <button onClick={handleLogout} className="rounded-full border border-rose-500/30 px-4 py-2 text-sm text-rose-400 hover:bg-rose-500/10 transition">
             Log out
           </button>
@@ -463,24 +522,57 @@ export default function EmployerDashboard() {
                           >
                             {screeningId === application._id ? 'Screening with AI...' : analysis ? 'Run AI Again' : 'Screen with AI'}
                           </button>
-                          <select
-                            value={application.status}
-                            onChange={(event) => handleApplicationStatus(application._id, event.target.value)}
-                            className="rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs text-white outline-none focus:border-violet-400"
-                          >
-                            <option value="Applied">Applied</option>
-                            <option value="Shortlisted">Shortlisted</option>
-                            <option value="Rejected">Rejected</option>
-                          </select>
-                        </div>
-                      </div>
-                    </article>
-                  )
-                })}
-            </div>
-          )}
-        </section>
-      </div>
-    </div>
-  )
+                          <div className="flex flex-col gap-2">
+                            {application.status === 'Applied' && (
+                              <>
+                                <button
+                                  onClick={() => handleApplicationStatus(application._id, 'Shortlisted')}
+                                  className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-400"
+                                >
+                                  Shortlist
+                                </button>
+                                <button
+                                  onClick={() => handleApplicationStatus(application._id, 'Rejected')}
+                                  className="rounded-xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-400"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            )}
+                            {application.status === 'Shortlisted' && (
+                              <>
+                                <button
+                                  onClick={() => handleApplicationStatus(application._id, 'Rejected')}
+                                  className="rounded-xl bg-rose-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-rose-400"
+                                >
+                                  Reject
+                                </button>
+                                <button
+                                  onClick={() => handleStartChat(application)}
+                                  className="rounded-xl bg-sky-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-sky-400"
+                                >
+                                  Chat
+                                </button>
+                              </>
+                            )}
+                      {application.status === 'Rejected' && (
+                        <button
+                          onClick={() => handleApplicationStatus(application._id, 'Shortlisted')}
+                          className="rounded-xl bg-emerald-500 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-400"
+                        >
+                          Shortlist
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      )}
+    </section>
+  </div>
+</div>
+)
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { USER_TOKEN_KEY, getToken, removeToken } from '../../utils/auth'
 // navigate still used for auth redirect
@@ -45,7 +45,7 @@ export default function Jobs() {
     }
   })
   const [message, setMessage] = useState('')
-  const [appliedJobKeys, setAppliedJobKeys] = useState([])
+  const [applications, setApplications] = useState([])
   const [applyingJobId, setApplyingJobId] = useState('')
   const [liveJobs, setLiveJobs] = useState([])
   const [resumeReady, setResumeReady] = useState(false)
@@ -82,7 +82,7 @@ export default function Jobs() {
         }
         if (applicationsRes.ok) {
           const applications = await applicationsRes.json()
-          setAppliedJobKeys(applications.map((application) => application.applicationKey))
+          setApplications(Array.isArray(applications) ? applications : [])
         }
       } catch (error) {
         setMessage(error.message || 'Could not load your application information.')
@@ -108,6 +108,10 @@ export default function Jobs() {
     ...liveJobs.map(j => ({ id: j._id, title: j.title, company: j.companyName, location: j.location, type: j.type, salary: j.salary, description: j.description, isLive: true })),
     ...staticJobs,
   ]
+
+  const applicationByKey = useMemo(() => {
+    return new Map(applications.map((application) => [application.applicationKey, application]))
+  }, [applications])
 
   const handleApply = async (job) => {
     if (!user) return
@@ -148,13 +152,20 @@ export default function Jobs() {
         throw new Error(data.message || 'Could not submit application')
       }
 
-      setAppliedJobKeys((current) => [...current, data.applicationKey])
+      setApplications((current) => [data, ...current])
       setMessage(`Applied to ${job.title} at ${job.company}.`)
     } catch (error) {
       setMessage(error.message)
     } finally {
       setApplyingJobId('')
     }
+  }
+
+  const openChat = (application) => {
+    if (!application?._id) return
+    navigate(`/chat?applicationId=${application._id}`, {
+      state: { applicationId: application._id },
+    })
   }
 
   return (
@@ -188,8 +199,10 @@ export default function Jobs() {
         <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-2">
           {allJobs.map((job) => {
             const applicationKey = applicationKeyFor(job)
-            const isApplied = appliedJobKeys.includes(applicationKey)
+            const application = applicationByKey.get(applicationKey)
+            const isApplied = Boolean(application)
             const isApplying = applyingJobId === job.id
+            const canChat = application?.status === 'Shortlisted' && application?.employerId
 
             return (
               <article
@@ -209,23 +222,49 @@ export default function Jobs() {
                   </div>
                 </div>
 
-                <div className="mt-5 flex items-center justify-between text-sm text-slate-300">
+                <div className="mt-5 flex items-center justify-between gap-3 text-sm text-slate-300">
                   <span>{job.location}</span>
-                  <span>One-tap apply</span>
+                  {isApplied ? (
+                    <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                      application.status === 'Shortlisted'
+                        ? 'bg-emerald-500/15 text-emerald-300'
+                        : application.status === 'Rejected'
+                          ? 'bg-rose-500/15 text-rose-300'
+                          : 'bg-violet-500/15 text-violet-300'
+                    }`}>
+                      {application.status}
+                    </span>
+                  ) : (
+                    <span>One-tap apply</span>
+                  )}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={() => handleApply(job)}
-                  disabled={Boolean(applyingJobId) || isApplied}
-                  className={`mt-6 w-full rounded-2xl px-4 py-3 text-sm font-semibold transition ${
-                    isApplied
-                      ? 'cursor-not-allowed bg-emerald-500/20 text-emerald-200'
-                      : 'bg-cyan-500 text-white hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70'
-                  }`}
-                >
-                  {isApplied ? 'Applied' : isApplying ? 'Applying...' : !resumeReady ? 'Upload Resume to Apply' : 'Apply Now'}
-                </button>
+                <div className="mt-6 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleApply(job)}
+                    disabled={Boolean(applyingJobId) || isApplied}
+                    className={`min-w-0 flex-1 rounded-2xl px-4 py-3 text-sm font-semibold transition ${
+                      isApplied
+                        ? 'cursor-not-allowed bg-emerald-500/20 text-emerald-200'
+                        : 'bg-cyan-500 text-white hover:bg-cyan-400 disabled:cursor-not-allowed disabled:opacity-70'
+                    }`}
+                  >
+                    {isApplied ? 'Applied' : isApplying ? 'Applying...' : !resumeReady ? 'Upload Resume to Apply' : 'Apply Now'}
+                  </button>
+                  {canChat && (
+                    <button
+                      type="button"
+                      onClick={() => openChat(application)}
+                      className="inline-flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-sky-500 text-white transition hover:bg-sky-400"
+                      title="Chat with employer"
+                      aria-label="Chat with employer"
+                    >
+                      <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72A7.45 7.45 0 013 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                      </svg>
+                    </button>
+                  )}
+                </div>
               </article>
             )
           })}

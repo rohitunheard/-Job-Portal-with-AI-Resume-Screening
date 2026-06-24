@@ -15,8 +15,8 @@ async function screenResumeBuffer({ buffer, jobTitle, jobDescription = '', skill
   let parser
   try {
     parser = new PDFParse({ data: buffer })
-    const parsed = await parser.getText()
-    resumeText = parsed.text?.trim()
+    const result = await parser.getText()
+    resumeText = result.text?.trim()
   } catch {
     const error = new Error('Could not read PDF. Please use a valid, text-based PDF resume.')
     error.statusCode = 400
