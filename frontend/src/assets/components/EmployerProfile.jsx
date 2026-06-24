@@ -111,9 +111,14 @@ export default function EmployerProfile() {
 
             <div className="flex gap-3">
               {!editing ? (
-                <button onClick={() => setEditing(true)} className="rounded-full border border-violet-400/40 px-5 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-400/10 transition">
-                  Edit Profile
-                </button>
+                <>
+                  <button onClick={() => setEditing(true)} className="rounded-full border border-violet-400/40 px-5 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-400/10 transition">
+                    Edit Profile
+                  </button>
+                  <button onClick={() => navigate('/change-password')} className="rounded-full border border-violet-400/40 px-5 py-2 text-sm font-semibold text-violet-300 hover:bg-violet-400/10 transition">
+                    Change Password
+                  </button>
+                </>
               ) : (
                 <button onClick={() => { setEditing(false); setPicPreview(null); setPicFile(null) }} className="rounded-full border border-white/15 px-5 py-2 text-sm text-slate-300 hover:bg-white/10 transition">
                   Cancel

@@ -156,9 +156,14 @@ export default function Profile() {
             {/* Edit / View toggle */}
             <div className="flex gap-3">
               {!editing ? (
-                <button onClick={() => setEditing(true)} className="rounded-full border border-cyan-400/40 px-5 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 transition">
-                  Edit Profile
-                </button>
+                <>
+                  <button onClick={() => setEditing(true)} className="rounded-full border border-cyan-400/40 px-5 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 transition">
+                    Edit Profile
+                  </button>
+                  <button onClick={() => navigate('/change-password')} className="rounded-full border border-cyan-400/40 px-5 py-2 text-sm font-semibold text-cyan-300 hover:bg-cyan-400/10 transition">
+                    Change Password
+                  </button>
+                </>
               ) : (
                 <button onClick={() => { setEditing(false); setPicPreview(null); setProfilePicFile(null); setResumeFile(null) }} className="rounded-full border border-white/15 px-5 py-2 text-sm text-slate-300 hover:bg-white/10 transition">
                   Cancel

@@ -1,4 +1,4 @@
-const { PDFParse } = require('pdf-parse')
+const pdf = require('pdf-parse')
 const OpenAI = require('openai')
 
 async function screenResumeBuffer({ buffer, jobTitle, jobDescription = '', skills = '' }) {
@@ -12,17 +12,13 @@ async function screenResumeBuffer({ buffer, jobTitle, jobDescription = '', skill
   }
 
   let resumeText = ''
-  let parser
   try {
-    parser = new PDFParse({ data: buffer })
-    const result = await parser.getText()
-    resumeText = result.text?.trim()
+    const data = await pdf(buffer)
+    resumeText = data.text?.trim()
   } catch {
     const error = new Error('Could not read PDF. Please use a valid, text-based PDF resume.')
     error.statusCode = 400
     throw error
-  } finally {
-    if (parser) await parser.destroy()
   }
 
   if (!resumeText || resumeText.length < 50) {

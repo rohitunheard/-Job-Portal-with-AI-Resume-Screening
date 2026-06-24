@@ -15,11 +15,12 @@ const conversationRoutes = require('./routes/conversations');
 const messageRoutes = require('./routes/messages');
 const profileRoutes = require('./routes/profile');
 const notificationRoutes = require('./routes/notifications');
+const updatepasswordRoutes = require('./routes/updatepassword');
 
 dotenv.config();
 const app = express();
 app.use(cors({
-  origin: ["http://localhost:3000", "http://localhost:5173"],
+  origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"],
 }));
 app.use(express.json());
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -49,6 +50,8 @@ app.use('/api/messages', messageRoutes);
 app.use('/api/profile', profileRoutes);
 //notifications
 app.use('/api/notifications', notificationRoutes);
+//update password
+app.use('/api/update-password', updatepasswordRoutes);
 
 app.get('/', (req, res) => {
     res.send('Api is running');
@@ -62,7 +65,7 @@ const server = app.listen(PORT, () => {
 
 const io = require('socket.io')(server, {
   cors: {
-    origin: ["http://localhost:3000", "http://localhost:5173"],
+    origin: ["http://localhost:3000", "http://localhost:5173", "http://localhost:5174"],
   },
 });
 app.set('io', io);

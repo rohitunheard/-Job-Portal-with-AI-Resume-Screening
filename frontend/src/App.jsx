@@ -14,6 +14,7 @@ import EmployerProfile from './assets/components/EmployerProfile'
 import EmployerLogin from './assets/components/EmployerLogin' // Import EmployerLogin
 import ResumeScreener from './assets/components/ResumeScreener'
 import Chat from './assets/components/Chat'
+import ChangePassword from './assets/components/ChangePassword'
 
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 
@@ -39,6 +40,7 @@ function Layout() {
         <Route path="/foundjobs" element={<Foundjobs />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/chat" element={<Chat />} />
+        <Route path="/change-password" element={<ChangePassword />} />
       </Routes>
       {!hideLayout && <Footer />}
     </>

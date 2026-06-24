@@ -129,6 +129,9 @@ export default function AdminPanel() {
             <p className="text-sm font-semibold text-white">{admin?.username}</p>
           </div>
         </div>
+        <button onClick={() => navigate('/change-password')} className="rounded-full border border-cyan-500/30 px-4 py-2 text-sm text-cyan-400 hover:bg-cyan-500/10 transition">
+          Change Password
+        </button>
         <button onClick={handleLogout} className="rounded-full border border-rose-500/30 px-4 py-2 text-sm text-rose-400 hover:bg-rose-500/10 transition">
           Log out
         </button>
