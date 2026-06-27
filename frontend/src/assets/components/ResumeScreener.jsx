@@ -93,7 +93,7 @@ export default function ResumeScreener() {
               </svg>
             </div>
             <div>
-<p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">Powered by AI (OpenAI)</p>
+<p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">Powered by AI (Gemini)</p>
               <h1 className="text-2xl font-semibold text-white">AI Resume Screener</h1>
               <p className="text-sm text-slate-400 mt-0.5">Upload your resume and get instant AI-powered feedback for any job role.</p>
             </div>

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { USER_TOKEN_KEY, getToken, removeToken } from '../../utils/auth'
 // navigate still used for auth redirect
 
@@ -51,6 +51,12 @@ export default function Jobs() {
   const [resumeReady, setResumeReady] = useState(false)
   const [profileChecked, setProfileChecked] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
+
+  const searchParams = useMemo(() => new URLSearchParams(location.search), [location.search]);
+  const title = searchParams.get('title') || '';
+  const searchLocation = searchParams.get('location') || '';
+  const category = searchParams.get('category') || '';
 
   useEffect(() => {
     if (!user || !getToken(USER_TOKEN_KEY)) {
@@ -104,10 +110,19 @@ export default function Jobs() {
     fetchLiveJobs()
   }, [navigate, user])
 
-  const allJobs = [
+  const allJobs = useMemo(() => [
     ...liveJobs.map(j => ({ id: j._id, title: j.title, company: j.companyName, location: j.location, type: j.type, salary: j.salary, description: j.description, isLive: true })),
     ...staticJobs,
-  ]
+  ], [liveJobs]);
+
+  const filteredJobs = useMemo(() => {
+    return allJobs.filter(job => {
+      const titleMatch = title ? job.title.toLowerCase().includes(title.toLowerCase()) : true;
+      const locationMatch = searchLocation ? job.location.toLowerCase() === searchLocation.toLowerCase() : true;
+      const categoryMatch = category ? job.type?.toLowerCase() === category.toLowerCase() : true;
+      return titleMatch && locationMatch && categoryMatch;
+    });
+  }, [allJobs, title, searchLocation, category]);
 
   const applicationByKey = useMemo(() => {
     return new Map(applications.map((application) => [application.applicationKey, application]))
@@ -197,7 +212,7 @@ export default function Jobs() {
         )}
 
         <div className="mt-8 grid gap-6 md:grid-cols-2 xl:grid-cols-2">
-          {allJobs.map((job) => {
+          {filteredJobs.map((job) => {
             const applicationKey = applicationKeyFor(job)
             const application = applicationByKey.get(applicationKey)
             const isApplied = Boolean(application)

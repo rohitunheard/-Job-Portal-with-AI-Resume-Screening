@@ -16,6 +16,8 @@ const messageRoutes = require('./routes/messages');
 const profileRoutes = require('./routes/profile');
 const notificationRoutes = require('./routes/notifications');
 const updatepasswordRoutes = require('./routes/updatepassword');
+const chatbotRoutes = require('./routes/chatbot');
+const passwordResetRoutes = require('./routes/passwordReset');
 
 dotenv.config();
 const app = express();
@@ -52,6 +54,10 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/notifications', notificationRoutes);
 //update password
 app.use('/api/update-password', updatepasswordRoutes);
+//chatbot
+app.use('/api/chatbot', chatbotRoutes);
+//password reset
+app.use('/api/password-reset', passwordResetRoutes);
 
 app.get('/', (req, res) => {
     res.send('Api is running');

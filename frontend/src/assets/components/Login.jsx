@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { useNavigate, Link } from 'react-router-dom'
+import { useNavigate, Link, useSearchParams } from 'react-router-dom'
 import { ADMIN_TOKEN_KEY, USER_TOKEN_KEY, setToken } from '../../utils/auth'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000'
@@ -61,11 +61,17 @@ export default function Login() {
   const [adminForm, setAdminForm] = useState({ username: '', password: '' })
 
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
 
   useEffect(() => {
     if (localStorage.getItem('jobPortalUser')) navigate('/jobs')
     else if (localStorage.getItem('employerUser')) navigate('/employer/dashboard')
     else if (sessionStorage.getItem('adminUser') && localStorage.getItem(ADMIN_TOKEN_KEY)) navigate('/admin/panel')
+    // Auto-select role from URL param e.g. /login?role=employer
+    const roleParam = searchParams.get('role')
+    if (roleParam && ['user', 'employer', 'admin'].includes(roleParam)) {
+      setRole(roleParam)
+    }
   }, [])
 
   const reset = () => { setStatus({ msg: '', ok: true }); setNeedsOtp(false); setOtpEmail('') }
@@ -318,6 +324,9 @@ export default function Login() {
                       <div>
                         <label className="mb-2 block text-sm font-medium text-slate-200">Password</label>
                         <input type="password" value={loginForm.password} onChange={(e) => setLoginForm(f => ({ ...f, password: e.target.value }))} required className={inputClass} placeholder="••••••••" />
+                        <div className="text-right mt-2">
+                          <Link to="/forgot-password" state={{ userType: role }} className="text-sm text-slate-400 hover:text-white">Forgot Password?</Link>
+                        </div>
                       </div>
                       <button type="submit" disabled={loading} className={`w-full rounded-xl px-4 py-3 font-semibold text-white transition disabled:opacity-70 disabled:cursor-not-allowed ${selectedRole?.btnColor}`}>
                         {loading ? 'Sending code...' : 'Send Verification Code'}

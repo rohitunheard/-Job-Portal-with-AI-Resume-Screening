@@ -12,6 +12,8 @@ const employerSchema = new mongoose.Schema(
     location: { type: String, default: '' },
     loginOtpHash: { type: String, default: '' },
     loginOtpExpiresAt: { type: Date, default: null },
+    resetPasswordOtp: { type: String, default: null },
+    resetPasswordExpires: { type: Date, default: null },
   },
   { timestamps: true }
 )

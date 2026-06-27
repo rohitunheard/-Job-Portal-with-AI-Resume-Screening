@@ -14,6 +14,31 @@ router.get('/', async (req, res) => {
   }
 })
 
+// Public - search for jobs
+router.post('/search', async (req, res) => {
+  try {
+    const { query, category, location } = req.body;
+    const filter = { isActive: true };
+
+    if (query) {
+      filter.title = { $regex: query, $options: 'i' };
+    }
+
+    if (category && category !== 'All Categories') {
+      filter.category = category;
+    }
+
+    if (location && location !== 'Location') {
+      filter.location = location;
+    }
+
+    const jobs = await JobPosting.find(filter).sort({ createdAt: -1 });
+    res.json(jobs);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // Employer — get their own postings
 router.get('/my/:employerId', authEmployer, async (req, res) => {
   try {

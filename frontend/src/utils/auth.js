@@ -20,3 +20,9 @@ export const isTokenExpired = (token) => {
     return true
   }
 }
+
+export const isLoggedIn = () => {
+  const userToken = getToken(USER_TOKEN_KEY);
+  const employerToken = getToken(EMPLOYER_TOKEN_KEY);
+  return (!isTokenExpired(userToken) && userToken !== null) || (!isTokenExpired(employerToken) && employerToken !== null);
+}

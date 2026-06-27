@@ -6,6 +6,8 @@ const createTransporter = () => {
   const user = process.env.SMTP_USER
   const pass = process.env.SMTP_PASS
 
+  console.log({ host, port, user, pass });
+
   if (!host || !user || !pass) {
     throw new Error('SMTP is not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, and SMTP_PASS.')
   }
@@ -66,9 +68,28 @@ const sendShortlistEmail = async (details) => {
   await sendApplicationStatusEmail({ ...details, status: 'Shortlisted' })
 }
 
+const sendPasswordResetEmail = async ({ to, otp }) => {
+    const transporter = createTransporter()
+    const fromAddress = process.env.SMTP_FROM || process.env.SMTP_USER
+
+    const message = `
+        <h1>You have requested a password reset</h1>
+        <p>Your One-Time Password (OTP) for password reset is: <strong>${otp}</strong></p>
+        <p>This OTP is valid for 10 minutes.</p>
+    `;
+
+    await transporter.sendMail({
+        from: fromAddress,
+        to,
+        subject: 'Password Reset OTP',
+        html: message
+    });
+}
+
 module.exports = {
   sendLoginOtpEmail,
   sendApplicationStatusEmail,
   sendShortlistEmail,
+  sendPasswordResetEmail,
   createTransporter,
 }

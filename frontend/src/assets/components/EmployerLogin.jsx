@@ -127,6 +127,9 @@ export default function EmployerLogin() {
                 <div>
                   <label className="mb-2 block text-sm font-medium text-slate-200">Password</label>
                   <input type="password" value={loginForm.password} onChange={(e) => setLoginForm(f => ({ ...f, password: e.target.value }))} required className={inputClass} placeholder="Enter your password" />
+                   <div className="text-right mt-2">
+                    <Link to="/forgot-password" state={{ userType: 'employer' }} className="text-sm text-slate-400 hover:text-white">Forgot Password?</Link>
+                    </div>
                 </div>
                 <button type="submit" disabled={loading} className="w-full rounded-xl bg-violet-500 px-4 py-3 font-semibold text-white transition hover:bg-violet-400 disabled:opacity-70 disabled:cursor-not-allowed">
                   {loading ? 'Sending code...' : 'Send Verification Code'}
